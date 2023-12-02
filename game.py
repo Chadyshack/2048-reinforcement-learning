@@ -8,6 +8,7 @@ class Board:
         initial_values = [0] * 14 + [2] * 2
         random.shuffle(initial_values)
         self.board = [initial_values[i:i + 4] for i in range(0, 16, 4)]
+        self.last_added_tile = None
 
     def print_board(self):
         for row in self.board:
@@ -54,6 +55,7 @@ class Board:
         if empty_positions:
             i, j = random.choice(empty_positions)
             self.board[i][j] = 4 if random.random() < 0.1 else 2  # 10% chance to add a 4
+            self.last_added_tile = (i, j)
 
     def _moves_available(self):
         for i in range(4):

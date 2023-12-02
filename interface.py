@@ -27,17 +27,30 @@ def draw_board():
     screen.fill(background_color)
     for i, row in enumerate(game.board):
         for j, value in enumerate(row):
-            tile_color = tile_colors[value]
+            # Default color for tiles
+            tile_color = tile_colors.get(value, (255, 255, 255))  # White for unexpected values
             pygame.draw.rect(screen, tile_color, (j*100, i*100, 100, 100))
             if value != 0:
                 text_surface = font.render(str(value), True, (0, 0, 0))
                 text_rect = text_surface.get_rect(center=(j*100 + 50, i*100 + 50))
                 screen.blit(text_surface, text_rect)
 
+    # Highlight the last added tile with a distinct color
+    if game.last_added_tile:
+        i, j = game.last_added_tile
+        last_tile_color = (255, 255, 255)  # Example: white color for the new tile
+        pygame.draw.rect(screen, last_tile_color, (j*100, i*100, 100, 100))
+        value = game.board[i][j]
+        if value != 0:
+            text_surface = font.render(str(value), True, (0, 0, 0))
+            text_rect = text_surface.get_rect(center=(j*100 + 50, i*100 + 50))
+            screen.blit(text_surface, text_rect)
+
     # Draw the score below the game board
     score_text = font.render(f"Score: {game.score}", True, (0, 0, 0))
     score_rect = score_text.get_rect(center=(width // 2, height - 25))  # Position the score at the bottom
     screen.blit(score_text, score_rect)
+
 
 
 # Main game loop
