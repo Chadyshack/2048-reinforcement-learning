@@ -6,7 +6,7 @@ from game import Board  # Import your existing game class
 pygame.init()
 
 # Set up the display
-width, height = 400, 400
+width, height = 400, 450  # Increase height to 450 to add space for the score
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("2048 Game")
 
@@ -34,9 +34,9 @@ def draw_board():
                 text_rect = text_surface.get_rect(center=(j*100 + 50, i*100 + 50))
                 screen.blit(text_surface, text_rect)
 
-    # Draw the score
+    # Draw the score below the game board
     score_text = font.render(f"Score: {game.score}", True, (0, 0, 0))
-    score_rect = score_text.get_rect(center=(width // 2, height - 30))
+    score_rect = score_text.get_rect(center=(width // 2, height - 25))  # Position the score at the bottom
     screen.blit(score_text, score_rect)
 
 
