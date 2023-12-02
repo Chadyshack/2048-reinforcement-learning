@@ -67,7 +67,7 @@ class Board:
         return False
 
 def main():
-    game = BoardClass()
+    game = Board()
     move_commands = {'u': 'up', 'w': 'up', 'd': 'down', 's': 'down', 'l': 'left', 'a': 'left', 'r': 'right', 'd': 'right'}
 
     while not game.game_over:
