@@ -41,10 +41,14 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_w or event.key == pygame.K_UP:
+            if event.key in (pygame.K_w, pygame.K_UP):
                 game.move_tiles('u')
-            # Handle other keys similarly...
-            # ...
+            elif event.key in (pygame.K_s, pygame.K_DOWN):
+                game.move_tiles('d')
+            elif event.key in (pygame.K_a, pygame.K_LEFT):
+                game.move_tiles('l')
+            elif event.key in (pygame.K_d, pygame.K_RIGHT):
+                game.move_tiles('r')
 
     # Draw the game board
     draw_board()
