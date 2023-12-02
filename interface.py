@@ -34,6 +34,12 @@ def draw_board():
                 text_rect = text_surface.get_rect(center=(j*100 + 50, i*100 + 50))
                 screen.blit(text_surface, text_rect)
 
+    # Draw the score
+    score_text = font.render(f"Score: {game.score}", True, (0, 0, 0))
+    score_rect = score_text.get_rect(center=(width // 2, height - 30))
+    screen.blit(score_text, score_rect)
+
+
 # Main game loop
 running = True
 while running:
