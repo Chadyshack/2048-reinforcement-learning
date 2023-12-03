@@ -9,6 +9,7 @@ class Board:
         random.shuffle(initial_values)
         self.board = [initial_values[i:i + 4] for i in range(0, 16, 4)]
         self.last_added_tile = None
+        self.merges_in_last_move = 0
 
     def print_board(self):
         for row in self.board:
@@ -20,6 +21,8 @@ class Board:
     def move_tiles(self, direction):
         if self.game_over:
             return False
+
+        self.merges_in_last_move = 0
 
         original_board = [row[:] for row in self.board]
         if direction in ('u', 'd'):
@@ -48,6 +51,7 @@ class Board:
                 line[i] *= 2
                 line[i + 1] = 0
                 self.score += line[i]
+                self.merges_in_last_move += 1
         return self._shift(line)
 
     def _add_new_tile(self):
