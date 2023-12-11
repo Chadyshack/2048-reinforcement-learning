@@ -1,4 +1,5 @@
 import random
+import copy
 
 class Board:
     def __init__(self):
@@ -65,6 +66,19 @@ class Board:
         # If board did not change from original, the move was invalid but game is not yet over
         return False
 
+    def possible_moves(self):
+        # Create lists to store moves and try all moves
+        possible_moves = []
+        directions = ['u', 'd', 'l', 'r']
+
+        # Try all possible directions
+        for direction in directions:
+            if self._simulate_move(direction):
+                possible_moves.append(direction)
+
+        # Return list of directions
+        return possible_moves
+
     def _transpose_board(self):
         # Converts rows to columns and columns to rows
         transposed = []
@@ -127,6 +141,16 @@ class Board:
                     return True
         return False
 
+    def _simulate_move(self, direction):
+        # Make a copy of the whole object before simulating move
+        board_copy = copy.deepcopy(self)
+
+        # Simulate the move on the copy
+        board_copy.move_tiles(direction)
+
+        # Return weather or not the board changed
+        return board_copy.board != self.board
+
 # The main function for running the game
 def main():
     # Make game object and set of allowed moves
@@ -138,6 +162,10 @@ def main():
         # Print the board and score, prompt user for move
         game.print_board()
         game.print_score()
+
+        # Print possible moves
+        print(game.possible_moves())
+
         move = input("Enter your move (u, d, l, r): ").lower()
         # Check if move was not possible and notify user if so
         if move in move_commands:
