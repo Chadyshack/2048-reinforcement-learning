@@ -1,10 +1,27 @@
 from game import Board
 import random
 import torch
+import torch.nn as nn
+
+class QNetwork(nn.Module):
+    def __init__(self):
+        super(QNetwork, self).__init__()
+        self.fc1 = nn.Linear(16, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 4)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
 
 action_indices = {'u': 0, 'd': 1, 'l': 2, 'r': 3}
 
-def evaluate_model(model, num_games=1000, model_name):
+def evaluate_model(model, num_games=1000):
+    model = torch.load(model)
+    model.eval()
+    top_scores = []
     total_score = 0
     for game_num in range(num_games):
         game = Board()
@@ -23,9 +40,11 @@ def evaluate_model(model, num_games=1000, model_name):
             game.move_tiles(chosen_action)
             state = game.get_normalized_flattened_board()
         total_score += game.score
+        top_scores.append(game.highest_tile())
         if game_num % 100 == 0:
             print(f"Played {game_num} games...")
     avg_score = total_score / num_games
     print(f"Average Score: {avg_score}")
+    return top_scores
 
-evaluate_model(1000, "model.plt")
+scores = evaluate_model("model.plt")
