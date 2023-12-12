@@ -36,14 +36,14 @@ class ReplayBuffer:
 
 # Declare all variables and objects for training
 q_network = QNetwork()
-optimizer = optim.Adam(q_network.parameters(), lr=5e-5)
+optimizer = optim.Adam(q_network.parameters(), lr=0.001)
 criterion = nn.MSELoss()
-replay_buffer = ReplayBuffer(capacity=50000)
-num_episodes = 5000
+replay_buffer = ReplayBuffer(capacity=20000)
+num_episodes = 1000
 batch_size = 100
-epsilon_start = 0.9
+epsilon = 0.9
 epsilon_end = 0.01
-epsilon_decay = .9999
+epsilon_decay = .999
 action_indices = {'u': 0, 'd': 1, 'l': 2, 'r': 3}
 gamma = 0.99
 
@@ -56,10 +56,7 @@ for episode in range(num_episodes):
     # Loop through steps until the game is over
     while not game.game_over:
         # Get the possible moves
-        possible_moves = game.possible_moves()
-
-        # Get current epsilon
-        epsilon = max(epsilon_end, epsilon_start * (epsilon_decay ** episode))
+        possible_moves = game.possible_moves
 
         # Choose an action using epsilon-greedy
         if np.random.uniform() < epsilon:
@@ -92,7 +89,7 @@ for episode in range(num_episodes):
         replay_buffer.push(state, action, reward, next_state, done)
 
         # Sample and update network if buffer is large enough
-        if len(replay_buffer.buffer) > batch_size:
+        if len(replay_buffer.buffer) > batch_size * 10:
             batch = replay_buffer.sample(batch_size)
             # Split batch into separate components, convert actions to indices
             states, actions, rewards, next_states, dones = zip(*batch)
@@ -110,6 +107,8 @@ for episode in range(num_episodes):
 
             # Compute next Q values
             next_q_values = q_network(next_states).max(1)[0]
+
+            # Zero out Q values that will lead to done state
             next_q_values[dones] = 0.0
 
             # Compute target Q values
@@ -125,6 +124,9 @@ for episode in range(num_episodes):
 
         # Update the state
         state = next_state
+
+    # Update epsilon
+    epsilon *= epsilon_decay
 
     # Display progress
     if episode % 100 == 0:
@@ -162,4 +164,5 @@ def evaluate_model(num_games=1000):
 scores = evaluate_model("model.plt")
 
 # Save the model
-torch.save(q_network.state_dict(), 'change_me.pt')
+def save_model(name):
+    torch.save(q_network.state_dict(), name)
