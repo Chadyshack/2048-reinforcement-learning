@@ -6,6 +6,9 @@ from game import Board
 import numpy as np
 import torch.nn.functional as F
 
+# Set device to GPU if available
+device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
+
 class QNetworkSimple(nn.Module):
     def __init__(self):
         super(QNetworkSimple, self).__init__()
@@ -14,10 +17,57 @@ class QNetworkSimple(nn.Module):
         self.fc3 = nn.Linear(64, 4)
 
     def forward(self, x):
+        x = x.to(device)
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
         x = self.fc3(x)
         return x
+    
+class QNetworkDropout(nn.Module):
+    def __init__(self):
+        super(QNetworkDropout, self).__init__()
+        self.fc1 = nn.Linear(16, 64)
+        self.fc2 = nn.Linear(64, 128)
+        self.dropout = nn.Dropout(p=0.5)
+        self.fc3 = nn.Linear(128, 64)
+        self.fc4 = nn.Linear(64, 4)
+
+    def forward(self, x):
+        x = x.to(device)
+        x = F.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = F.relu(self.fc2(x))
+        x = self.dropout(x)
+        x = F.relu(self.fc3(x))
+        x = self.fc4(x)
+        return x
+
+class QNetworkConv(nn.Module):
+    def __init__(self):
+        super(QNetworkConv, self).__init__()
+        self.conv_block = ConvBlock(input_dim=1, output_dim=32)  # Example value
+        self.flatten = nn.Flatten()
+        self.fc1 = nn.Linear(4*4*32, 128)  # Adjust the size accordingly
+        self.fc2 = nn.Linear(128, 4)  # Final layer for 4 decisions
+
+    def forward(self, x):
+        x = x.to(device)
+        x = self.conv_block(x)
+        x = self.flatten(x)
+        x = torch.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+class ConvBlock(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(ConvBlock, self).__init__()
+        self.conv = nn.Conv2d(input_dim, output_dim, kernel_size=3, stride=1, padding=1)
+        self.bn = nn.BatchNorm2d(output_dim)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        return F.relu(x)
 
 class ReplayBuffer:
     def __init__(self, capacity):
@@ -35,7 +85,7 @@ class ReplayBuffer:
         return random.sample(self.buffer, batch_size)
 
 # Declare all variables and objects for training
-q_network = QNetwork()
+q_network = QNetworkSimple().to(device)
 optimizer = optim.Adam(q_network.parameters(), lr=0.001)
 criterion = nn.MSELoss()
 replay_buffer = ReplayBuffer(capacity=20000)
@@ -56,7 +106,7 @@ for episode in range(num_episodes):
     # Loop through steps until the game is over
     while not game.game_over:
         # Get the possible moves
-        possible_moves = game.possible_moves
+        possible_moves = game.possible_moves()
 
         # Choose an action using epsilon-greedy
         if np.random.uniform() < epsilon:
@@ -96,11 +146,11 @@ for episode in range(num_episodes):
             actions_modified = [action_indices[action] for action in actions]
 
             # Convert to tensors
-            states = torch.FloatTensor(states)
-            actions = torch.LongTensor(actions_modified)
-            rewards = torch.FloatTensor(rewards)
-            next_states = torch.FloatTensor(next_states)
-            dones = torch.BoolTensor(dones)
+            states = torch.FloatTensor(states).to(device)
+            actions = torch.LongTensor(actions_modified).to(device)
+            rewards = torch.FloatTensor(rewards).to(device)
+            next_states = torch.FloatTensor(next_states).to(device)
+            dones = torch.BoolTensor(dones).to(device)
 
             # Compute current Q values
             current_q_values = q_network(states).gather(1, actions.unsqueeze(1))
