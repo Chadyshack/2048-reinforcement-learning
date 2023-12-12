@@ -5,6 +5,7 @@ import random
 from game import Board
 import numpy as np
 import torch.nn.functional as F
+import socket
 
 # Set device to GPU if available
 device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
@@ -61,13 +62,26 @@ class QNetworkConv(nn.Module):
 class ConvBlock(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(ConvBlock, self).__init__()
-        self.conv = nn.Conv2d(input_dim, output_dim, kernel_size=3, stride=1, padding=1)
-        self.bn = nn.BatchNorm2d(output_dim)
+        self.input_dim = input_dim
+        d = output_dim // 4
+        self.conv1 = nn.Conv2d(input_dim, d, kernel_size=1, padding='same')
+        self.conv2 = nn.Conv2d(input_dim, d, kernel_size=2, padding='same')
+        self.conv3 = nn.Conv2d(input_dim, d, kernel_size=3, padding='same')
+        self.conv4 = nn.Conv2d(input_dim, d, kernel_size=4, padding='same')
+        self.relu = nn.ReLU()
 
     def forward(self, x):
-        x = self.conv(x)
-        x = self.bn(x)
-        return F.relu(x)
+        # Reshape input to [batch_size, channels, height, width]
+        if len(x.shape) == 1:  # Unbatched input
+            x = x.view(1, self.input_dim, 4, 4)  # Assuming input is a flattened 4x4 board
+        elif len(x.shape) == 2:  # Batched input
+            x = x.view(-1, self.input_dim, 4, 4)  # -1 for batch size
+
+        x1 = self.relu(self.conv1(x))
+        x2 = self.relu(self.conv2(x))
+        x3 = self.relu(self.conv3(x))
+        x4 = self.relu(self.conv4(x))
+        return torch.cat((x1, x2, x3, x4), dim=1)
 
 class ReplayBuffer:
     def __init__(self, capacity):
@@ -85,10 +99,10 @@ class ReplayBuffer:
         return random.sample(self.buffer, batch_size)
 
 # Declare all variables and objects for training
-q_network = QNetworkSimple().to(device)
+q_network = QNetworkConv().to(device)
 optimizer = optim.Adam(q_network.parameters(), lr=0.001)
 criterion = nn.MSELoss()
-replay_buffer = ReplayBuffer(capacity=20000)
+replay_buffer = ReplayBuffer(capacity=1000)
 num_episodes = 1000
 batch_size = 100
 epsilon = 0.9
@@ -96,6 +110,12 @@ epsilon_end = 0.01
 epsilon_decay = .999
 action_indices = {'u': 0, 'd': 1, 'l': 2, 'r': 3}
 gamma = 0.99
+
+if torch.cuda.is_available():
+    print(f'{socket.gethostname()} has an available cuda GPU.')
+    
+if torch.backends.mps.is_available():
+    print(f'{socket.gethostname()} has an available mps GPU.')
 
 # Loop through batches
 for episode in range(num_episodes):
@@ -211,7 +231,7 @@ def evaluate_model(num_games=1000):
     return top_scores
 
 # temp
-scores = evaluate_model("model.plt")
+scores = evaluate_model()
 
 # Save the model
 def save_model(name):
