@@ -19,7 +19,8 @@ class QNetwork(nn.Module):
 action_indices = {'u': 0, 'd': 1, 'l': 2, 'r': 3}
 
 def evaluate_model(model, num_games=1000):
-    model = torch.load(model)
+    model = QNetwork()
+    model.load_state_dict(torch.load(model))
     model.eval()
     top_scores = []
     total_score = 0
