@@ -4,25 +4,19 @@ import torch.optim as optim
 import random
 from game import Board
 import numpy as np
+import torch.nn.functional as F
 
-class QNetwork(nn.Module):
+class QNetworkSimple(nn.Module):
     def __init__(self):
-        super(QNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
-        self.fc1 = nn.Linear(128 * 4 * 4, 512)
-        self.fc2 = nn.Linear(512, 4)
+        super(QNetworkSimple, self).__init__()
+        self.fc1 = nn.Linear(16, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 4)
 
     def forward(self, x):
-        # Reshape the input to a 4x4 shape
-        x = x.view(-1, 1, 4, 4)
-        x = torch.relu(self.conv1(x))
-        x = torch.relu(self.conv2(x))
-        x = torch.relu(self.conv3(x))
-        x = x.view(x.size(0), -1)
         x = torch.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = torch.relu(self.fc2(x))
+        x = self.fc3(x)
         return x
 
 class ReplayBuffer:
@@ -136,7 +130,9 @@ for episode in range(num_episodes):
     if episode % 100 == 0:
             print(f"Ran {episode} episodes...")
 
-def evaluate_model(model, num_games=5000):
+# temp
+def evaluate_model(num_games=1000):
+    top_scores = []
     total_score = 0
     for game_num in range(num_games):
         game = Board()
@@ -144,7 +140,7 @@ def evaluate_model(model, num_games=5000):
         while not game.game_over:
             with torch.no_grad():
                 state_tensor = torch.FloatTensor(state).unsqueeze(0)
-                action_values = model(state_tensor)                
+                action_values = q_network(state_tensor)                
                 possible_moves = game.possible_moves()
                 masked_action_values = torch.full(action_values.shape, float('-inf'))
                 for move in possible_moves:
@@ -155,9 +151,15 @@ def evaluate_model(model, num_games=5000):
             game.move_tiles(chosen_action)
             state = game.get_normalized_flattened_board()
         total_score += game.score
+        top_scores.append(game.highest_tile())
         if game_num % 100 == 0:
             print(f"Played {game_num} games...")
     avg_score = total_score / num_games
     print(f"Average Score: {avg_score}")
+    return top_scores
 
-evaluate_model(q_network)
+# temp
+scores = evaluate_model("model.plt")
+
+# Save the model
+torch.save(q_network.state_dict(), 'change_me.pt')
