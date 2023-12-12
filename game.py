@@ -1,5 +1,6 @@
 import random
 import copy
+import math
 
 class Board:
     def __init__(self):
@@ -78,6 +79,23 @@ class Board:
 
         # Return list of directions
         return possible_moves
+
+    def get_flattened_board(self):
+        flattened_board = []
+        for row in self.board:
+            for value in row:
+                # Traverse board and append each value
+                flattened_board.append(value)
+        return flattened_board
+
+    def get_normalized_flattened_board(self):
+        normalized_flattened_board = []
+        for row in self.board:
+            for value in row:
+                # Traverse board and append each value normalized to base 2 (except zeros)
+                normalized_value = math.log(value, 2) if value != 0 else 0
+                normalized_flattened_board.append(normalized_value)
+        return normalized_flattened_board
 
     def _transpose_board(self):
         # Converts rows to columns and columns to rows
