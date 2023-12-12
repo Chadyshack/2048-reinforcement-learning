@@ -24,6 +24,10 @@ class Board:
         # Outputs the current score
         print(f"Score: {self.score}")
 
+    def print_highest_tile(self):
+        # Outputs the current highest tile
+        print(f"Highest Tile: {self.highest_tile()}")
+
     def move_tiles(self, direction):
         # Check if game is already over
         if self.game_over:
@@ -168,6 +172,15 @@ class Board:
 
         # Return weather or not the board changed
         return board_copy.board != self.board
+    
+    def highest_tile(self):
+        # Returns the highest tile on the board
+        highest_tile = 0
+        for row in self.board:
+            for value in row:
+                if value > highest_tile:
+                    highest_tile = value
+        return highest_tile
 
 # The main function for running the game
 def main():
@@ -180,6 +193,7 @@ def main():
         # Print the board and score, prompt user for move
         game.print_board()
         game.print_score()
+        game.print_highest_tile()
 
         # Print possible moves
         print(game.possible_moves())
