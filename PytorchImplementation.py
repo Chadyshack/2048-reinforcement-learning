@@ -35,19 +35,19 @@ class ReplayBuffer:
 
 # Declare all variables and objects for training
 q_network = QNetwork()
-optimizer = optim.Adam(q_network.parameters(), lr=0.0001)
+optimizer = optim.Adam(q_network.parameters(), lr=5e-5)
 criterion = nn.MSELoss()
-replay_buffer = ReplayBuffer(capacity=100000)
-num_batches = 1000
+replay_buffer = ReplayBuffer(capacity=50000)
+num_episodes = 5000
 batch_size = 100
-epsilon = 1.0
-epsilon_end = 0.001
-epsilon_decay = np.exp(np.log(epsilon_end) / (num_batches))
+epsilon_start = 0.9
+epsilon_end = 0.01
+epsilon_decay = .9999
 action_indices = {'u': 0, 'd': 1, 'l': 2, 'r': 3}
 gamma = 0.99
 
 # Loop through batches
-for batch in range(num_batches):
+for episode in range(num_episodes):
     # Start a new game board and get the initial state
     game = Board()
     state = game.get_normalized_flattened_board()
@@ -56,6 +56,9 @@ for batch in range(num_batches):
     while not game.game_over:
         # Get the possible moves
         possible_moves = game.possible_moves()
+
+        # Get current epsilon
+        epsilon = max(epsilon_end, epsilon_start * (epsilon_decay ** episode))
 
         # Choose an action using epsilon-greedy
         if np.random.uniform() < epsilon:
@@ -122,11 +125,11 @@ for batch in range(num_batches):
         # Update the state
         state = next_state
 
-    # Decay epsilon
-    epsilon *= epsilon_decay
+    # Display progress
+    if episode % 100 == 0:
+            print(f"Ran {episode} episodes...")
 
-# TEMPORARY
-def evaluate_model(model, num_games=1000):
+def evaluate_model(model, num_games=5000):
     total_score = 0
     for game_num in range(num_games):
         game = Board()
@@ -134,26 +137,20 @@ def evaluate_model(model, num_games=1000):
         while not game.game_over:
             with torch.no_grad():
                 state_tensor = torch.FloatTensor(state).unsqueeze(0)
-                action_values = model(state_tensor)
-                
-                # Get possible moves and mask action values for only possible actions
+                action_values = model(state_tensor)                
                 possible_moves = game.possible_moves()
                 masked_action_values = torch.full(action_values.shape, float('-inf'))
                 for move in possible_moves:
                     index = action_indices[move]
-                    masked_action_values[0][index] = action_values[0][index]
-                
-                # Choose the best action among the possible ones
+                    masked_action_values[0][index] = action_values[0][index]                
                 action = torch.argmax(masked_action_values).item()
                 chosen_action = list(action_indices.keys())[list(action_indices.values()).index(action)]
-
             game.move_tiles(chosen_action)
             state = game.get_normalized_flattened_board()
         total_score += game.score
-        print(f"Game {game_num + 1}: Score = {game.score}")
-
+        if game_num % 100 == 0:
+            print(f"Played {game_num} games...")
     avg_score = total_score / num_games
     print(f"Average Score: {avg_score}")
 
-# Call the evaluation function
 evaluate_model(q_network)
